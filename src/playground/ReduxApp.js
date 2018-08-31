@@ -64,7 +64,7 @@ const filtersDefaults = {
 };
 
 //Reducers
-const expenseReducer = (state = expensesDefaults, action) => {
+const expensesReducer = (state = expensesDefaults, action) => {
   switch (action.type) {
     case "ADD_EXPENSE":
       return [...state, action.expense];
@@ -97,24 +97,55 @@ const filtersReducer = (state = filtersDefaults, action) => {
   }
 };
 
+//Get visile expenses
+const getVisibleExpenses = (expenses, { text, sortBy, startDate, endDate }) => {
+  return expenses
+    .filter(expense => {
+      const startDateMatch =
+        typeof startDate !== "number" || expense.createdAt >= startDate;
+      const endDateMatch =
+        typeof endDate !== "number" || expense.createdAt <= endDate;
+      const textMatch = expense.description
+        .toLowerCase()
+        .includes(text.toLowerCase());
+
+      return startDateMatch && endDateMatch && textMatch;
+    })
+    .sort((a, b) => {
+      if (sortBy === "date") {
+        return a.createdAt < b.createdAt ? 1 : -1;
+      } else {
+        if (sortBy === "amount") {
+          return a.amount < b.amount ? 1 : -1;
+        }
+      }
+    });
+};
 //Create Store
-const store = createStore(combineReducers({ expenseReducer, filtersReducer }));
+const store = createStore(combineReducers({ expensesReducer, filtersReducer }));
 //Subscribe to redux store
-const unsubscribe = store.subscribe(() => console.log(store.getState()));
+store.subscribe(() => {
+  const state = store.getState();
+  const visibleExpenses = getVisibleExpenses(
+    state.expensesReducer,
+    state.filtersReducer
+  );
+  console.log(visibleExpenses);
+});
 //Actions
 const expenseOne = store.dispatch(
-  addExpense({ description: "Rent", amount: 300 })
+  addExpense({ description: "Rent", amount: 1300, createdAt: -21000 })
 );
 const expenseTwo = store.dispatch(
-  addExpense({ description: "Coffee", amount: 900 })
+  addExpense({ description: "Coffee", amount: 900, createdAt: -1000 })
 );
 // store.dispatch(removeExpense({ id: expenseOne.expense.id }));
 // store.dispatch(editExpense(expenseTwo.expense.id, { amount: 501 }));
 // store.dispatch(setTextFilter({ text: 'School' }))
 // store.dispatch(sortByDate(10))
-// store.dispatch(sortByAmount(110))
-// store.dispatch(setStartDate(12))
-// store.dispatch(setEndDate(14))
+store.dispatch(sortByAmount());
+// store.dispatch(setStartDate(0))
+// store.dispatch(setEndDate(999))
 
 // console.log(store.getState())
 
